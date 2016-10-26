@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 
+// TODO: COMMENTS PLEASE!!
 public class HuffmanEncoding {
   public static void main(String[] args) {
     int[] freq = getFreq(args[0]);
@@ -7,7 +8,8 @@ public class HuffmanEncoding {
   
   public static int[] getFreq(String str) {
     int[] freq = new int[256]; //256 different types of chars
-    char[] letterArray = new char[256]; 
+    char[] letterArray = new char[256];
+    // ITERATE OVER CHARACTERS IN STRING (str.charAt(i))
     for(int i = 0; i < letterArray.length; i++) {
       freq[letterArray[i]]++;
     }

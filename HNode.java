@@ -1,10 +1,11 @@
 /**
  * Binary tree class
+ * TODO: Update these comments!
  * 
  * @author Samuel Levenson
  * @version 10/19
  */
-public class HNode<T> {
+public class HNode {
   
   public char letter;
   public int freq;

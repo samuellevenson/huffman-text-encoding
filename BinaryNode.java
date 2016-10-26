@@ -7,13 +7,13 @@
 public class BinaryNode<T> {
   
   private T value;
-  private BinaryNode rightChild;
-  private BinaryNode leftChild;
+  private BinaryNode<T> rightChild;
+  private BinaryNode<T> leftChild;
   
   /**
    * constructor for binary tree node
    */
-  public BinaryNode(T val, BinaryNode right, BinaryNode left) {
+  public BinaryNode(T val, BinaryNode<T> right, BinaryNode<T> left) {
     value = val;
     rightChild = right;
     leftChild = left;
@@ -35,19 +35,19 @@ public class BinaryNode<T> {
     value = newVal;
   }
   
-  public BinaryNode getRightChild() {
+  public BinaryNode<T> getRightChild() {
     return rightChild;
   }
   
-  public void setRightChild(BinaryNode newRight) {
+  public void setRightChild(BinaryNode<T> newRight) {
     rightChild = newRight;
   }
   
-  public BinaryNode getLeftChild() {
+  public BinaryNode<T> getLeftChild() {
     return leftChild;
   }
   
-  public void setLeftChild(BinaryNode newLeft) {
+  public void setLeftChild(BinaryNode<T> newLeft) {
     leftChild = newLeft;
   }
   
