@@ -119,7 +119,7 @@ public class HuffmanEncoding {
           writer.write((char)(i) + encodings[i] + ", ");
         }
       }
-      System.out.println();
+      write.write("\n"); // TODO: Check this!
       
       //convert input into char array and then use encodings aray to output huffman encoding
       char[] chArray = text.toCharArray();
