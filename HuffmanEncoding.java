@@ -16,7 +16,6 @@ public class HuffmanEncoding {
     }
     if(args[0].contains(".huffman.txt")) {
       String words = readHuffmanTxt(new File(args[0]).getAbsoluteFile());
-      System.out.println(words);
       writeTxt(words, new File(args[0]));
     }
     else {
@@ -147,7 +146,7 @@ public class HuffmanEncoding {
       BufferedWriter writer = new BufferedWriter(new FileWriter(output));
       //outputs lookup table for decoding first
       for(int i = 0; i < encodings.length-1; i++) {
-        writer.write(encodings[i] + ", ");
+        writer.write(encodings[i] + ",");
       }
       writer.write(encodings[encodings.length-1] + ";" + "\n");
       
@@ -169,6 +168,12 @@ public class HuffmanEncoding {
    */
   public static String readHuffmanTxt(File f) {
     String[] lookup = makeLookupTable(f);
+    //print to test if there is actually anything in lookup
+    System.out.println("Lookup length: " + lookup.length);
+    for(String str: lookup) {
+      System.out.println(str);
+    }
+
     String message = ""; //message is what is read out of input text file, huffman encoded
     String words = ""; //words is the converted message, in regular words
     
