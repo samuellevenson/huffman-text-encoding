@@ -14,17 +14,34 @@ public class HuffmanEncoding {
       System.out.println("please enter a filepath as a commandline argument");
       System.exit(0);
     }
-    File input = new File(args[0]).getAbsoluteFile();
-    System.out.println(input.getAbsolutePath());
-    String text = readTxt(input);
+    if(args[0].contains(".huffman.txt")) {
+      String words = readHuffmanTxt(new File(args[0]).getAbsoluteFile());
+      System.out.println(words);
+      writeTxt(words, new File(args[0]));
+    }
+    else {
+      toHuffman(new File(args[0]).getAbsoluteFile());
+    }
     
+    
+  }
+  /**
+   * takes text file with regular words and turns into another text file with words huffman encoded 
+   */
+  public static File toHuffman(File input) {
+    //read input file
+    String text = readTxt(input);
+    //create frequency table
     int[] freq = getFreq(text);
+    //create all leaf nodes that will be in tree
     ArrayList<HNode> nodelist = getNodelist(freq);
+    //build tree up from leafs
     HNode root = createTree(nodelist);
     String[] encodings = new String[256];
+    //traverse tree to find encodings for each letter
     getEncoding(root, encodings, "");
-    
-    outputTxt(text, encodings, input);
+    //output original message, huffman encoded, into a text file
+    return outputHuffmanTxt(text, encodings, input);
   }
   
   public static int[] getFreq(String str) {
@@ -103,28 +120,133 @@ public class HuffmanEncoding {
     }
     return null;
   }
+  /**
+   * writes a message to text file, returns output file
+   */
+  public static File writeTxt(String words, File input) {
+    File output = new File(input.getParent() + "/" + input.getName().replace(".huffman.txt",".txt")); //creates new file in same directory, name is original_runlength.txt
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+      writer.write(words);
+      writer.close();
+    } catch(IOException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return output;
+  }
   
   /**
    * converts text into huffman encoding, outputs to text file
    */
-  public static void outputTxt(String text, String[] encodings, File input) {
+  public static File outputHuffmanTxt(String text, String[] encodings, File input) {
     File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman.txt")); //creates new file in same directory, name is original_runlength.txt
-    System.out.println(output.getAbsolutePath());
     
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(output));
       //outputs lookup table for decoding first
-      for(int i = 0; i < encodings.length; i++) {
-        if(encodings[i] != null) {
-          writer.write((char)(i) + encodings[i] + ", ");
-        }
+      for(int i = 0; i < encodings.length-1; i++) {
+        writer.write(encodings[i] + ", ");
       }
-      write.write("\n"); // TODO: Check this!
+      writer.write(encodings[encodings.length-1] + ";" + "\n");
       
       //convert input into char array and then use encodings aray to output huffman encoding
       char[] chArray = text.toCharArray();
       for(char ch: chArray) {
         writer.write(encodings[ch]);
+      }
+      writer.close();
+    } catch (IOException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return output;
+  }
+  /**
+   * 
+   */
+  public static String readHuffmanTxt(File f) {
+    String[] lookup = makeLookupTable(f);
+    String message = ""; //message is what is read out of input text file, huffman encoded
+    String words = ""; //words is the converted message, in regular words
+    
+    try {
+      Scanner in = new Scanner(f);
+      in.useDelimiter(";");
+      message = in.next();
+      message = in.next(); //only want the part after the semicolon
+    } catch (IOException e) {
+      System.out.println("Unable to read file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    
+    for(int start = 0; start < message.length() -1; start++) {
+      int end = start + 1;
+      char c = 0;
+      while(c == 0) { //once c != 0, we have reached the end of the encoding of one char
+        String s = message.substring(start,end);
+        c = lookup(s,lookup);
+        end++;
+        if(end == message.length()) {
+          return words;
+        }
+      }
+      words += c;
+    }
+    return words;
+  }
+  
+  public static char lookup(String msg, String[] table) {
+    for(int i = 0; i < table.length; i++) {
+      if(table[i].equals(msg)) {
+        return (char)i;
+      }
+    }
+    return 0;
+  }
+  /**
+   * 
+   */
+  public static String[] makeLookupTable(File input) {
+    String[] lookup = new String[256];
+    try {
+      Scanner in = new Scanner(input);
+      in.useDelimiter(",");
+      for(int i = 0; i < lookup.length; i++) {
+        lookup[i] = in.next();
+      }
+    } catch (IOException e) {
+      System.out.println("Unable to read file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return lookup;
+  }
+  /**
+   * outputs huffman encoded message with lookup table to binary file
+   * problems:
+   * what to use for delimiters? 
+   * how to know how to read lookup table 
+   * how to know when lookup table ends and message starts
+   */
+  public static void outputBinary(String text, String[] encodings, File input) {
+    FileOutputStream writer = null;
+    
+    try {
+      writer = new FileOutputStream(input.getParent() + "/" + input.getName().replace(".txt",".huffman"));
+      //outputs lookup table for decoding first
+      for(int i = 0; i < encodings.length-1; i++) {
+        writer.write(Integer.parseInt(encodings[i]));
+      }
+      writer.write(Integer.parseInt(encodings[encodings.length-1]));
+      
+      //convert input into char array and then use encodings aray to output huffman encoding
+      char[] chArray = text.toCharArray();
+      for(char ch: chArray) {
+        writer.write(Integer.parseInt(encodings[ch]));
       }
       writer.close();
     } catch(IOException e) {
