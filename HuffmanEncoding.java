@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.*;
+import javax.swing.JFileChooser;
 /**
  * Reads text file given as command line argument, outputs text file containing huffman encoding of input and lookup table for decoding
  * 
@@ -10,19 +11,31 @@ import java.io.*;
  */
 public class HuffmanEncoding {
   public static void main(String[] args) {
-    if(args.length < 1) {
-      System.out.println("please enter a filepath as a commandline argument");
-      System.exit(0);
-    }
-    if(args[0].contains(".huffman.txt")) {
-      String words = readHuffmanTxt(new File(args[0]).getAbsoluteFile());
-      writeTxt(words, new File(args[0]));
+    File filepath = null;
+    if(args.length == 0) {      
+      JFileChooser fileChooser = new JFileChooser();
+      int choice = fileChooser.showOpenDialog(null);
+      if(choice == JFileChooser.APPROVE_OPTION) {
+        filepath = fileChooser.getSelectedFile();
+      }
+      else {
+        System.exit(1);
+      }
     }
     else {
-      toHuffman(new File(args[0]).getAbsoluteFile());
+      filepath = new File(args[0]);
+    }
+    filepath = filepath.getAbsoluteFile();
+    
+    if(filepath.getName().contains(".huffman.txt")) {
+      String words = readHuffmanTxt(filepath);
+      writeTxt(words, filepath);
+    }
+    else {
+      toHuffman(filepath);
     }
     
-    
+    System.exit(0);
   }
   /**
    * takes text file with regular words and turns into another text file with words huffman encoded 
@@ -148,7 +161,7 @@ public class HuffmanEncoding {
       for(int i = 0; i < encodings.length-1; i++) {
         writer.write(encodings[i] + ",");
       }
-      writer.write(encodings[encodings.length-1] + ";" + "\n");
+      writer.write(encodings[encodings.length-1] + ";");
       
       //convert input into char array and then use encodings aray to output huffman encoding
       char[] chArray = text.toCharArray();
@@ -168,14 +181,7 @@ public class HuffmanEncoding {
    */
   public static String readHuffmanTxt(File f) {
     String[] lookup = makeLookupTable(f);
-    //print to test if there is actually anything in lookup
-    System.out.println("Lookup length: " + lookup.length);
-    for(String str: lookup) {
-      System.out.println(str);
-    }
-
     String message = ""; //message is what is read out of input text file, huffman encoded
-    String words = ""; //words is the converted message, in regular words
     
     try {
       Scanner in = new Scanner(f);
@@ -187,19 +193,24 @@ public class HuffmanEncoding {
       e.printStackTrace();
       System.exit(1);
     }
-    
-    for(int start = 0; start < message.length() -1; start++) {
+    String words = ""; //words is the converted message, in regular words
+    //use lookup table to convert message from 1's and 0's to words
+    int start = 0;
+    while(start < message.length() -1) {
       int end = start + 1;
       char c = 0;
       while(c == 0) { //once c != 0, we have reached the end of the encoding of one char
         String s = message.substring(start,end);
+        //check if current substring of message is a full encoding yet
         c = lookup(s,lookup);
-        end++;
+        //will go over the end of the string sometimes...
         if(end == message.length()) {
           return words;
         }
+        end++;
       }
       words += c;
+      start = end - 1; //start the next letter where the last one ended
     }
     return words;
   }
@@ -219,7 +230,7 @@ public class HuffmanEncoding {
     String[] lookup = new String[256];
     try {
       Scanner in = new Scanner(input);
-      in.useDelimiter(",");
+      in.useDelimiter(",|;");
       for(int i = 0; i < lookup.length; i++) {
         lookup[i] = in.next();
       }
