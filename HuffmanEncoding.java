@@ -26,21 +26,22 @@ public class HuffmanEncoding {
       filepath = new File(args[0]);
     }
     filepath = filepath.getAbsoluteFile();
-    
+    //convert from huffman
     if(filepath.getName().contains(".huffman.txt")) {
-      String words = readHuffmanTxt(filepath);
+      String words = readBinary(filepath);
       writeTxt(words, filepath);
     }
+    //convert to huffman
     else {
       toHuffman(filepath);
     }
     
-    System.exit(0);
+    //System.exit(0);
   }
   /**
    * takes text file with regular words and turns into another text file with words huffman encoded 
    */
-  public static File toHuffman(File input) {
+  public static void toHuffman(File input) {
     //read input file
     String text = readTxt(input);
     //create frequency table
@@ -52,8 +53,8 @@ public class HuffmanEncoding {
     String[] encodings = new String[256];
     //traverse tree to find encodings for each letter
     getEncoding(root, encodings, "");
-    //output original message, huffman encoded, into a text file
-    return outputHuffmanTxt(text, encodings, input);
+    //output binary file
+    writeBinary(text, encodings, input);
   }
   
   public static int[] getFreq(String str) {
@@ -150,49 +151,9 @@ public class HuffmanEncoding {
   }
   
   /**
-   * converts text into huffman encoding, outputs to text file
-   */
-  public static File outputHuffmanTxt(String text, String[] encodings, File input) {
-    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman.txt")); //creates new file in same directory, name is original_runlength.txt
-    
-    try {
-      BufferedWriter writer = new BufferedWriter(new FileWriter(output));
-      //outputs lookup table for decoding first
-      for(int i = 0; i < encodings.length-1; i++) {
-        writer.write(encodings[i] + ",");
-      }
-      writer.write(encodings[encodings.length-1] + ";");
-      
-      //convert input into char array and then use encodings aray to output huffman encoding
-      char[] chArray = text.toCharArray();
-      for(char ch: chArray) {
-        writer.write(encodings[ch]);
-      }
-      writer.close();
-    } catch (IOException e) {
-      System.out.println("Unable to output to file: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(1);
-    }
-    return output;
-  }
-  /**
    * 
    */
-  public static String readHuffmanTxt(File f) {
-    String[] lookup = makeLookupTable(f);
-    String message = ""; //message is what is read out of input text file, huffman encoded
-    
-    try {
-      Scanner in = new Scanner(f);
-      in.useDelimiter(";");
-      message = in.next();
-      message = in.next(); //only want the part after the semicolon
-    } catch (IOException e) {
-      System.out.println("Unable to read file: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(1);
-    }
+  public static String binaryToWords(String message, String[] lookup) {
     String words = ""; //words is the converted message, in regular words
     //use lookup table to convert message from 1's and 0's to words
     int start = 0;
@@ -215,54 +176,57 @@ public class HuffmanEncoding {
     return words;
   }
   
-  public static char lookup(String msg, String[] table) {
-    for(int i = 0; i < table.length; i++) {
-      if(table[i].equals(msg)) {
+  public static char lookup(String msg, String[] lookup) {
+    for(int i = 0; i < lookup.length; i++) {
+      if(lookup[i].equals(msg)) {
         return (char)i;
       }
     }
     return 0;
   }
-  /**
-   * 
-   */
-  public static String[] makeLookupTable(File input) {
-    String[] lookup = new String[256];
-    try {
-      Scanner in = new Scanner(input);
-      in.useDelimiter(",|;");
-      for(int i = 0; i < lookup.length; i++) {
-        lookup[i] = in.next();
-      }
-    } catch (IOException e) {
-      System.out.println("Unable to read file: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(1);
-    }
-    return lookup;
-  }
+  
   /**
    * outputs huffman encoded message with lookup table to binary file
-   * problems:
-   * what to use for delimiters? 
-   * how to know how to read lookup table 
-   * how to know when lookup table ends and message starts
    */
-  public static void outputBinary(String text, String[] encodings, File input) {
-    FileOutputStream writer = null;
+  public static void writeBinary(String text, String[] encodings, File input) {
+    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman.txt")); //creates new file in same directory, name is original.txt
     
     try {
-      writer = new FileOutputStream(input.getParent() + "/" + input.getName().replace(".txt",".huffman"));
-      //outputs lookup table for decoding first
-      for(int i = 0; i < encodings.length-1; i++) {
-        writer.write(Integer.parseInt(encodings[i]));
+      BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+      //outputs length of each encoding in lookup table for reading lookuptable
+      for(int i = 0; i < encodings.length; i++) {
+        String len = "";
+        //add 'padding' to the front to make sure all numbers are 4 digits long for easy reading,
+        //there will be issues if a length of an encoding length is >4 binary digits, not sure if possible with only 256 ascii characters
+        if(encodings[i] == null) {
+          len = "0000";
+        }
+        else if(encodings[i].length() < 8) {
+          len = "0";
+        }
+        else if(encodings[i].length() < 4) {
+          len = "00";
+        }
+        else if(encodings[i].length() < 2) {
+          len = "000";
+        }
+        
+        if(encodings[i] != null) {
+          len += Integer.toBinaryString(encodings[i].length());
+        }
+        System.out.println(i + ":" + len);
+        writer.write(len);
       }
-      writer.write(Integer.parseInt(encodings[encodings.length-1]));
-      
+      //outputs lookup table
+      for(int i = 0; i < encodings.length; i++) {
+        if(encodings[i] != null) {
+          writer.write(encodings[i]);
+        }
+      }
       //convert input into char array and then use encodings aray to output huffman encoding
       char[] chArray = text.toCharArray();
       for(char ch: chArray) {
-        writer.write(Integer.parseInt(encodings[ch]));
+        writer.write(encodings[ch]);
       }
       writer.close();
     } catch(IOException e) {
@@ -270,5 +234,26 @@ public class HuffmanEncoding {
       e.printStackTrace();
       System.exit(1);
     }
+  }
+  public static String readBinary(File f) {
+    String binary = readTxt(f); //String containing entire contents of binary file
+    System.out.println(binary.length());
+    int[] encodingLens = new int[256]; //256 encodings each has a length
+    for(int i = 0; i < 1024; i += 4) { //the first 1024 characters in the string are the lengths of the encodings
+      encodingLens[i/4] = Integer.parseInt(binary.substring(i, i+4),2);
+    }
+    binary = binary.substring(1024); //remove the part that was just used
+    //create lookup table
+    String[] lookup = new String[256];
+    for(int i = 0; i < encodingLens.length; i++) {
+      lookup[i] = binary.substring(i,i+encodingLens[i]);
+      //remove part that was used
+      binary = binary.substring(encodingLens[i]);
+    }
+    for(int i = 0; i < lookup.length; i++) {
+      System.out.println(i + ":" + encodingLens[i]);
+    }
+    System.out.println(binary.length());
+    return binaryToWords(binary,lookup);
   }
 }
