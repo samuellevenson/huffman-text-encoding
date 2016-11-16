@@ -200,21 +200,23 @@ public class HuffmanEncoding {
         //there will be issues if a length of an encoding length is >4 binary digits, not sure if possible with only 256 ascii characters
         if(encodings[i] == null) {
           len = "0000";
-        }
-        else if(encodings[i].length() < 8) {
-          len = "0";
-        }
-        else if(encodings[i].length() < 4) {
+        } else if(encodings[i].length() < 2) {
+         len = "000";
+        } else if(encodings[i].length() < 4) {
           len = "00";
-        }
-        else if(encodings[i].length() < 2) {
-          len = "000";
+        } else if(encodings[i].length() < 8) {
+          len = "0";
         }
         
         if(encodings[i] != null) {
           len += Integer.toBinaryString(encodings[i].length());
         }
-        System.out.println(i + ":" + len);
+
+        if (len.length() != 4) {
+          throw new IllegalStateException("Len should always be 4, not " + len.length() + " (i=" + i + ")");
+        }
+
+        System.out.println(i + ":" + encodings[i] + ":" + len);
         writer.write(len);
       }
       //outputs lookup table
@@ -237,7 +239,6 @@ public class HuffmanEncoding {
   }
   public static String readBinary(File f) {
     String binary = readTxt(f); //String containing entire contents of binary file
-    System.out.println(binary.length());
     int[] encodingLens = new int[256]; //256 encodings each has a length
     for(int i = 0; i < 1024; i += 4) { //the first 1024 characters in the string are the lengths of the encodings
       encodingLens[i/4] = Integer.parseInt(binary.substring(i, i+4),2);
@@ -250,10 +251,10 @@ public class HuffmanEncoding {
       //remove part that was used
       binary = binary.substring(encodingLens[i]);
     }
+    System.out.println(binary.substring(0,100)); //testing
     for(int i = 0; i < lookup.length; i++) {
-      System.out.println(i + ":" + encodingLens[i]);
+      System.out.println((char)i + ":" + lookup[i]);
     }
-    System.out.println(binary.length());
     return binaryToWords(binary,lookup);
   }
 }
