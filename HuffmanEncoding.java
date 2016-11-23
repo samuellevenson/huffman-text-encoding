@@ -28,9 +28,15 @@ public class HuffmanEncoding {
     }
     filepath = filepath.getAbsoluteFile();
     //convert from huffman
-    if(filepath.getName().contains(".huffman")) {
-      String words = readBinary(filepath);
+    if(filepath.getName().contains(".huffman.txt")) {
+      String binary = readTxt(filepath);
+      String words = processBinary(binary);
       writeTxt(words, filepath);
+    }
+    if(filepath.getName().contains(".huffman")) {
+      String binary = readBinary(filepath);
+      String words = processBinary(binary);
+      writeTxt(words,filepath);
     }
     //convert to huffman
     else {
@@ -55,7 +61,8 @@ public class HuffmanEncoding {
     //traverse tree to find encodings for each letter
     getEncoding(root, encodings, "");
     //output binary file
-    writeBinary(binaryContents(text, encodings),input);
+    writeBinary(toBinaryContents(text, encodings),input);
+    writeBinaryAsTxt(toBinaryContents(text, encodings),input);
   }
   
   public static int[] getFreq(String str) {
@@ -140,10 +147,8 @@ public class HuffmanEncoding {
       DataOutputStream writer = new DataOutputStream(new FileOutputStream(output));
       int i;
       for(i = 0; i < binary.length()-9; i += 9) {
-        System.out.println(binary.substring(i,i+9));
         writer.write(Integer.parseInt(binary.substring(i,i+9)));
       }
-      System.out.println(binary.substring(i,binary.length()));
       writer.write(Integer.parseInt(binary.substring(i,binary.length())));
       writer.close();
     } catch(IOException e) {
@@ -157,7 +162,20 @@ public class HuffmanEncoding {
    * writes a message to text file, returns output file
    */
   public static File writeTxt(String words, File input) {
-    File output = new File(input.getParent() + "/" + input.getName().replace(".huffman.txt",".txt")); //creates new file in same directory, name is original.huffman.txt
+    File output = new File(input.getParent() + "/" + input.getName().replace(".huffman",".txt")); //creates new file in same directory, name is original.huffman.txt
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+      writer.write(words);
+      writer.close();
+    } catch(IOException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return output;
+  }
+  public static File writeBinaryAsTxt(String words, File input) {
+    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman.txt")); //creates new file in same directory, name is original.huffman.txt
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(output));
       writer.write(words);
@@ -207,7 +225,7 @@ public class HuffmanEncoding {
   /**
    * returns encoded binary file contents as a string
    */
-  public static String binaryContents(String text, String[] encodings) {
+  public static String toBinaryContents(String text, String[] encodings) {
     String binary = "";
     //outputs length of each encoding in lookup table for reading lookuptable
     for(int i = 0; i < encodings.length; i++) {
@@ -245,7 +263,7 @@ public class HuffmanEncoding {
     return binary;
   }
   /**
-   * reads binary file, seperates lookup table from actual message
+   * reads binary file
    */
   public static String readBinary(File f) {
     //read contents of binary file
@@ -265,6 +283,12 @@ public class HuffmanEncoding {
       e.printStackTrace();
       System.exit(1);
     }
+    return binary;
+  }
+  /**
+   * given the contents of the binary file as a string, returns the message contained
+   */
+  public static String processBinary(String binary) {
     int[] encodingLens = new int[256]; //256 encodings each has a length
     for(int i = 0; i < 1024; i += 4) { //the first 1024 characters in the string are the lengths of the encodings
       encodingLens[i/4] = Integer.parseInt(binary.substring(i, i+4),2);
