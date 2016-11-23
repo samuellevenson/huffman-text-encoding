@@ -6,6 +6,8 @@ import javax.swing.JFileChooser;
  * converts text files to huffman encoding in binary
  * binary format is: lengths of encodings of all 256 ascii characters (can be zero), encodings of non-zero ascii characters, encoded message
  * 
+ * methods that do not work as intended: readBinary and writeBinary (its possible only one is broken, they depend on each other sort of)
+ * 
  * @author Samuel Levenson
  * @version 11/2/16
  * most helpful resources: http://www.fas.harvard.edu/~cscie119/lectures/trees.pdf - also has useful information about nodes, https://www.youtube.com/watch?v=ZdooBTdW5bM - just huffman encoding
