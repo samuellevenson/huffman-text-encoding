@@ -29,17 +29,18 @@ public class HuffmanEncoding {
       filepath = new File(args[0]);
     }
     filepath = filepath.getAbsoluteFile();
-    //convert from huffman
+    //convert from text file containing binary data
     if(filepath.getName().contains(".huffman.txt")) {
       String binary = readTxt(filepath);
       String words = processBinary(binary);
       writeTxt(words, filepath);
     }
-    if(filepath.getName().contains(".huffman")) {
-      String binary = readBinary(filepath);
-      String words = processBinary(binary);
-      writeTxt(words,filepath);
-    }
+    //convert from serialized file
+     else if(filepath.getName().contains(".ser")) {
+     String binary = readSerialized(filepath);
+     String words = processBinary(binary);
+     writeTxt(words,filepath);
+     }
     //convert to huffman
     else {
       toHuffman(filepath);
@@ -62,8 +63,9 @@ public class HuffmanEncoding {
     String[] encodings = new String[256];
     //traverse tree to find encodings for each letter
     getEncoding(root, encodings, "");
-    //output binary file
-    writeBinary(toBinaryContents(text, encodings),input);
+    //output serialized file
+    writeSerialized(toBinaryContents(text, encodings),input);
+    //output text file with binary data
     writeBinaryAsTxt(toBinaryContents(text, encodings),input);
   }
   
@@ -143,28 +145,18 @@ public class HuffmanEncoding {
     }
     return null;
   }
-  public static File writeBinary(String binary, File input) {
-    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman")); //creates new file in same directory, name is original.txt 
-    try {
-      DataOutputStream writer = new DataOutputStream(new FileOutputStream(output));
-      int i;
-      for(i = 0; i < binary.length()-9; i += 9) {
-        writer.write(Integer.parseInt(binary.substring(i,i+9)));
-      }
-      writer.write(Integer.parseInt(binary.substring(i,binary.length())));
-      writer.close();
-    } catch(IOException e) {
-      System.out.println("Unable to output to file: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(1);
-    }
-    return output;
-  }
   /**
    * writes a message to text file, returns output file
    */
   public static File writeTxt(String words, File input) {
-    File output = new File(input.getParent() + "/" + input.getName().replace(".huffman",".txt")); //creates new file in same directory, name is original.huffman.txt
+    File output = null;
+    if(input.getName().contains(".ser")) {
+      output = new File(input.getParent() + "/" + input.getName().replace(".ser",".txt")); //creates new file in same directory, name is original.txt
+    }
+    if(input.getName().contains(".huffman.txt")) {
+      output = new File(input.getParent() + "/" + input.getName().replace(".huffman",""));
+    }
+
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(output));
       writer.write(words);
@@ -176,6 +168,9 @@ public class HuffmanEncoding {
     }
     return output;
   }
+  /**
+   * writes text file containing the bits that would be in a binary file
+   */
   public static File writeBinaryAsTxt(String words, File input) {
     File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman.txt")); //creates new file in same directory, name is original.huffman.txt
     try {
@@ -264,6 +259,101 @@ public class HuffmanEncoding {
     }
     return binary;
   }
+  
+  /**
+   * given the contents of the binary file as a string, returns the message contained
+   */
+  public static String processBinary(String binary) {
+    int[] encodingLens = new int[256]; //256 encodings each has a length
+    for(int i = 0; i < 1024; i += 4) { //the first 1024 characters in the string are the lengths of the encodings
+      encodingLens[i/4] = Integer.parseInt(binary.substring(i, i+4),2);
+    }
+    binary = binary.substring(1024); //remove the part that was just used
+    //create lookup table
+    String[] lookup = new String[256];
+    for(int i = 0; i < encodingLens.length; i++) {
+      lookup[i] = binary.substring(0,encodingLens[i]);
+      //remove part that was used
+      binary = binary.substring(encodingLens[i]);
+    }
+    return binaryToWords(binary,lookup);
+  }
+  /**
+   * writes serialization of string of bits that make up huffman encoding
+   */
+  public static File writeSerialized(String binary, File input) {
+    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".ser")); //creates new file in same directory, name is original.serialized
+    boolean[] binArray = new boolean[binary.length()];
+    //create boolean array containing contents of binary string
+    for(int i = 0; i < binary.length()-1; i++) {
+      if(binary.substring(i,i+1).equals("0")) {
+        binArray[i] = false;
+      }
+      else {
+        binArray[i] = true;
+      }
+    }
+    try {
+      ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(output));
+      writer.writeObject(binArray);
+      writer.flush(); //what does this do?
+      writer.close();
+    } catch(IOException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return output;
+  }
+  /**
+   * reads serialized file, would probably make more sense to return boolean array representing binary encoding/ use that throughout the entire
+   * program, but all of the other methods use the binary string, maybe change at point
+   */
+  public static String readSerialized(File f) {
+    boolean[] binArray;
+    String binary = "";
+    try {
+      ObjectInputStream read = new ObjectInputStream(new FileInputStream(f));
+      binArray = (boolean[])read.readObject();
+      read.close();
+      for(boolean b: binArray) {
+        if(b) {
+          binary += "1";
+        }
+        else {
+          binary += "0";
+        }
+      }
+    } catch(IOException | ClassNotFoundException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    //change boolean[] to string containing 1's and 0's because thats what the other methods were created to handle
+    System.out.println(binary.length());
+    return binary;
+    
+  }
+  /**
+   * writes binary file (incorrectly)
+   */
+  public static File writeBinary(String binary, File input) {
+    File output = new File(input.getParent() + "/" + input.getName().replace(".txt",".huffman")); //creates new file in same directory, name is original.binary 
+    try {
+      DataOutputStream writer = new DataOutputStream(new FileOutputStream(output));
+      int i;
+      for(i = 0; i < binary.length()-8; i += 8) {
+        writer.write(Integer.parseInt(binary.substring(i,i+8)));
+      }
+      writer.write(Integer.parseInt(binary.substring(i,binary.length())));
+      writer.close();
+    } catch(IOException e) {
+      System.out.println("Unable to output to file: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(1);
+    }
+    return output;
+  }
   /**
    * reads binary file
    */
@@ -286,23 +376,5 @@ public class HuffmanEncoding {
       System.exit(1);
     }
     return binary;
-  }
-  /**
-   * given the contents of the binary file as a string, returns the message contained
-   */
-  public static String processBinary(String binary) {
-    int[] encodingLens = new int[256]; //256 encodings each has a length
-    for(int i = 0; i < 1024; i += 4) { //the first 1024 characters in the string are the lengths of the encodings
-      encodingLens[i/4] = Integer.parseInt(binary.substring(i, i+4),2);
-    }
-    binary = binary.substring(1024); //remove the part that was just used
-    //create lookup table
-    String[] lookup = new String[256];
-    for(int i = 0; i < encodingLens.length; i++) {
-      lookup[i] = binary.substring(0,encodingLens[i]);
-      //remove part that was used
-      binary = binary.substring(encodingLens[i]);
-    }
-    return binaryToWords(binary,lookup);
   }
 }
